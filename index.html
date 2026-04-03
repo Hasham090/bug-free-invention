@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anime Movie Recommender</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="particles"></div>
+
+  <header>
+    <h1 class="logo">
+      <span class="logo-icon">&#9733;</span>
+      Anime Movie Recommender
+    </h1>
+    <nav>
+      <button class="nav-btn active" data-section="form-section">Discover</button>
+      <button class="nav-btn" data-section="results-section">Results</button>
+      <button class="nav-btn" data-section="favorites-section">
+        Favorites <span id="fav-count" class="badge">0</span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- FORM SECTION -->
+    <section id="form-section" class="section active">
+      <div class="form-container">
+        <h2 class="section-title">Tell us your taste</h2>
+        <p class="section-sub">We'll find the perfect anime movies for you.</p>
+
+        <form id="taste-form">
+          <div class="form-group">
+            <label>Favorite Genres</label>
+            <div class="chip-group" id="genre-chips">
+              <button type="button" class="chip" data-value="Action">Action</button>
+              <button type="button" class="chip" data-value="Romance">Romance</button>
+              <button type="button" class="chip" data-value="Horror">Horror</button>
+              <button type="button" class="chip" data-value="Sci-Fi">Sci-Fi</button>
+              <button type="button" class="chip" data-value="Thriller">Thriller</button>
+              <button type="button" class="chip" data-value="Fantasy">Fantasy</button>
+              <button type="button" class="chip" data-value="Drama">Drama</button>
+              <button type="button" class="chip" data-value="Comedy">Comedy</button>
+              <button type="button" class="chip" data-value="Mystery">Mystery</button>
+              <button type="button" class="chip" data-value="Adventure">Adventure</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="western-input">Western Movies/Shows You Enjoy</label>
+            <input type="text" id="western-input" placeholder="e.g. Inception, Breaking Bad, The Matrix..." />
+          </div>
+
+          <div class="form-group">
+            <label>Mood Preference</label>
+            <div class="chip-group" id="mood-chips">
+              <button type="button" class="chip" data-value="dark">Dark / Psychological</button>
+              <button type="button" class="chip" data-value="feel-good">Feel-Good</button>
+              <button type="button" class="chip" data-value="mind-bending">Mind-Bending</button>
+              <button type="button" class="chip" data-value="action-packed">Action-Packed</button>
+              <button type="button" class="chip" data-value="emotional">Emotional / Tearjerker</button>
+              <button type="button" class="chip" data-value="chill">Chill / Slice of Life</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Preferred Movie Length</label>
+            <div class="chip-group single-select" id="length-chips">
+              <button type="button" class="chip" data-value="short">Under 90 min</button>
+              <button type="button" class="chip" data-value="medium">90 &ndash; 120 min</button>
+              <button type="button" class="chip" data-value="long">120+ min</button>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <span class="btn-text">Get Recommendations</span>
+              <span class="btn-glow"></span>
+            </button>
+            <button type="button" id="surprise-btn" class="btn btn-secondary">
+              &#10024; Surprise Me
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- RESULTS SECTION -->
+    <section id="results-section" class="section">
+      <div class="results-header">
+        <h2 class="section-title" id="results-title">Your Recommendations</h2>
+        <div class="filter-bar">
+          <label for="length-filter">Filter by length:</label>
+          <select id="length-filter">
+            <option value="all">All</option>
+            <option value="short">Under 90 min</option>
+            <option value="medium">90 &ndash; 120 min</option>
+            <option value="long">120+ min</option>
+          </select>
+        </div>
+      </div>
+      <div id="results-grid" class="card-grid"></div>
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Finding your perfect anime...</p>
+      </div>
+      <div id="no-results" class="no-results hidden">
+        <p>No results found. Try different preferences!</p>
+        <button class="btn btn-secondary" onclick="showSection('form-section')">Go Back</button>
+      </div>
+    </section>
+
+    <!-- FAVORITES SECTION -->
+    <section id="favorites-section" class="section">
+      <h2 class="section-title">Your Favorites</h2>
+      <div id="favorites-grid" class="card-grid"></div>
+      <div id="no-favorites" class="no-results">
+        <p>No favorites yet. Start discovering anime!</p>
+        <button class="btn btn-secondary" onclick="showSection('form-section')">Discover</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
