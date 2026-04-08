@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { AnalysisResults } from '@/components/analysis-results';
@@ -18,17 +18,7 @@ export default function ContractDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (authStatus === 'unauthenticated') {
-      router.push('/auth');
-      return;
-    }
-    if (authStatus === 'authenticated' && contractId) {
-      fetchContract();
-    }
-  }, [authStatus, contractId, router]);
-
-  const fetchContract = async () => {
+  const fetchContract = useCallback(async () => {
     try {
       const res = await fetch(`/api/contracts/${contractId}`);
       if (!res.ok) {
@@ -41,7 +31,17 @@ export default function ContractDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [contractId]);
+
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      router.push('/auth');
+      return;
+    }
+    if (authStatus === 'authenticated' && contractId) {
+      fetchContract();
+    }
+  }, [authStatus, contractId, router, fetchContract]);
 
   if (authStatus === 'loading' || loading) {
     return (

@@ -9,6 +9,9 @@ import { eq } from 'drizzle-orm';
 import { rateLimit } from '@/lib/rate-limit';
 import { v4 as uuidv4 } from 'uuid';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
