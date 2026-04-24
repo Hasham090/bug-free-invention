@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum Platform {
+  SHOPIFY
+  AMAZON
+  MANUAL
+}
+
+enum ProductStatus {
+  HEALTHY
+  SLOW
+  DEAD
+}
+
+enum ActionType {
+  DISCOUNT
+  BUNDLE
+  LIQUIDATE
+  REORDER_PAUSE
+  PROMOTE
+}
+
+enum ActionStatus {
+  PENDING
+  DONE
+  DISMISSED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+}
+
+model User {
+  id             String         @id @default(cuid())
+  clerkId        String         @unique
+  email          String         @unique
+  name           String?
+  plan           Plan           @default(STARTER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  stores         Store[]
+  subscription   Subscription?
+  preferences    Preferences?
+}
+
+model Preferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  targetMarginPct       Float    @default(35)
+  maxDaysInventory      Int      @default(60)
+  categories            String[] @default([])
+  emailAlertsEnabled    Boolean  @default(true)
+  weeklyReportEnabled   Boolean  @default(true)
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  userId      String
+  platform    Platform
+  storeName   String
+  storeDomain String?
+  accessToken String?
+  connectedAt DateTime @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products    Product[]
+}
+
+model Product {
+  id            String        @id @default(cuid())
+  storeId       String
+  name          String
+  sku           String
+  imageUrl      String?
+  category      String
+  unitsInStock  Int
+  costPrice     Float
+  sellingPrice  Float
+  lastSaleDate  DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  store           Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sales           SaleRecord[]
+  recommendations AIRecommendation[]
+
+  @@index([storeId])
+  @@index([sku])
+}
+
+model SaleRecord {
+  id        String   @id @default(cuid())
+  productId String
+  quantity  Int
+  saleDate  DateTime
+  revenue   Float
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, saleDate])
+}
+
+model AIRecommendation {
+  id              String       @id @default(cuid())
+  productId       String
+  actionType      ActionType
+  explanation     String
+  expectedOutcome String
+  confidenceScore Int
+  status          ActionStatus @default(PENDING)
+  dollarImpact    Float        @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  product         Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([status])
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  stripeCustomerId   String?            @unique
+  stripeSubId        String?            @unique
+  plan               Plan               @default(STARTER)
+  status             SubscriptionStatus @default(TRIALING)
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
