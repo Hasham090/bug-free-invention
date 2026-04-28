@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  background: #070b1a;
+  color: #e6ecff;
+  min-height: 100%;
+}
+
+body {
+  background-image:
+    radial-gradient(60% 60% at 20% 10%, rgba(46,229,207,.06) 0, transparent 60%),
+    radial-gradient(50% 50% at 90% 0%, rgba(46,229,207,.05) 0, transparent 60%),
+    linear-gradient(180deg, #070b1a 0%, #0b1224 100%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-navy-700/60 bg-navy-900/70 backdrop-blur-sm shadow-card;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-br from-teal-400 to-teal-600 text-navy-950 hover:shadow-glow;
+  }
+  .btn-secondary {
+    @apply btn border border-navy-700 bg-navy-800 text-ink hover:border-teal-400/40;
+  }
+  .btn-ghost {
+    @apply btn text-ink-soft hover:text-ink hover:bg-navy-800;
+  }
+  .input {
+    @apply w-full rounded-xl border border-navy-700 bg-navy-900/80 px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-teal-400/40;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border border-navy-700 px-2 py-0.5 text-xs text-ink-soft;
+  }
+  .stat-label { @apply text-xs uppercase tracking-wider text-ink-muted; }
+  .stat-value { @apply mt-1 text-3xl font-semibold tabular-nums; }
+}

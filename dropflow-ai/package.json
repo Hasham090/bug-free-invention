@@ -1,0 +1,17 @@
+{
+  "name": "dropflow-ai",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["backend", "workers", "frontend"],
+  "scripts": {
+    "dev": "concurrently -n backend,workers,frontend -c blue,magenta,cyan \"npm:dev:backend\" \"npm:dev:workers\" \"npm:dev:frontend\"",
+    "dev:backend": "npm --workspace @dropflow/backend run dev",
+    "dev:workers": "npm --workspace @dropflow/workers run dev",
+    "dev:frontend": "npm --workspace @dropflow/frontend run dev",
+    "prisma:generate": "npm --workspace @dropflow/backend run prisma:generate",
+    "prisma:migrate": "npm --workspace @dropflow/backend run prisma:migrate"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

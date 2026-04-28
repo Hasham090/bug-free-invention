@@ -1,0 +1,334 @@
+// DropFlow AI — Prisma schema
+// Models cover all 7 modules: stores, suppliers, products, orders, ads, AI runs, dashboard analytics.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── Auth / Tenancy ─────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String   // bcrypt hash
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stores       Store[]
+  adAccounts   AdAccount[]
+  notifications Notification[]
+}
+
+// ───────────────────────── Stores ─────────────────────────
+
+enum StorePlatform {
+  SHOPIFY
+}
+
+model Store {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     StorePlatform @default(SHOPIFY)
+  name         String
+  domain       String        @unique          // e.g. my-store.myshopify.com
+  accessToken  String                          // Shopify offline access token
+  scope        String?
+  niche        String?
+  themeId      String?
+  brandPalette Json?                           // { primary, secondary, accent, text, bg }
+  typography   Json?                           // { headingFont, bodyFont }
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  products    Product[]
+  orders      Order[]
+  campaigns   AdCampaign[]
+  webhooks    ShopifyWebhook[]
+  aiRuns      AIRun[]
+}
+
+model ShopifyWebhook {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  topic     String
+  shopifyId String
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, topic])
+}
+
+// ───────────────────────── Suppliers ─────────────────────────
+
+enum SupplierKind {
+  ALIEXPRESS
+  CJ_DROPSHIPPING
+  ZENDROP
+  GENERIC_SCRAPED
+  CSV_IMPORT
+}
+
+model Supplier {
+  id        String       @id @default(cuid())
+  kind      SupplierKind
+  name      String
+  websiteUrl String?
+  apiKey    String?      // optional per-supplier override
+  rating    Float?       // avg supplier rating
+  createdAt DateTime     @default(now())
+
+  products SupplierProduct[]
+  orders   SupplierOrder[]
+}
+
+model SupplierProduct {
+  id              String   @id @default(cuid())
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  externalId      String                       // sku/spu on supplier platform
+  title           String
+  description     String?
+  images          String[]
+  variants        Json?                        // [{name, sku, price, stock, options}]
+  cost            Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  shippingDays    Int?
+  moq             Int      @default(1)
+  rating          Float?
+  reviewCount     Int?
+  category        String?
+  raw             Json?                        // original payload from supplier
+  fetchedAt       DateTime @default(now())
+
+  products Product[]
+
+  @@unique([supplierId, externalId])
+  @@index([category])
+}
+
+// ───────────────────────── Products in user's store ─────────────────────────
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Product {
+  id                String          @id @default(cuid())
+  storeId           String
+  store             Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  shopifyProductId  String?         @unique
+  supplierProductId String?
+  supplierProduct   SupplierProduct? @relation(fields: [supplierProductId], references: [id])
+  title             String
+  description       String?
+  handle            String?
+  tags              String[]
+  images            String[]
+  status            ProductStatus   @default(DRAFT)
+  priceCents        Int                            // selling price
+  costCents         Int                            // supplier cost snapshot
+  marginPercent     Float?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  variants     ProductVariant[]
+  orderItems   OrderItem[]
+
+  @@index([storeId, status])
+}
+
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shopifyVariantId String? @unique
+  sku           String?
+  optionValues  Json?     // { color: "red", size: "M" }
+  priceCents    Int
+  costCents     Int
+  inventoryQty  Int       @default(0)
+}
+
+// ───────────────────────── Orders ─────────────────────────
+
+enum OrderStage {
+  RECEIVED
+  ORDERED_FROM_SUPPLIER
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id              String     @id @default(cuid())
+  storeId         String
+  store           Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  shopifyOrderId  String     @unique
+  orderNumber     String
+  customerEmail   String?
+  customerName    String?
+  shippingAddress Json
+  totalCents      Int
+  currency        String     @default("USD")
+  stage           OrderStage @default(RECEIVED)
+  trackingNumber  String?
+  trackingUrl     String?
+  notes           String?
+  receivedAt      DateTime   @default(now())
+  fulfilledAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  items          OrderItem[]
+  supplierOrders SupplierOrder[]
+
+  @@index([storeId, stage])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  shopifyVariantId String?
+  title       String
+  quantity    Int
+  priceCents  Int
+}
+
+model SupplierOrder {
+  id              String      @id @default(cuid())
+  orderId         String
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplierId      String
+  supplier        Supplier    @relation(fields: [supplierId], references: [id])
+  externalOrderId String?
+  trackingNumber  String?
+  trackingUrl     String?
+  status          String      @default("pending")
+  payloadSent     Json?
+  payloadReceived Json?
+  placedAt        DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+// ───────────────────────── Ad Campaigns ─────────────────────────
+
+enum AdPlatform {
+  FACEBOOK
+  GOOGLE
+  TIKTOK
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+model AdAccount {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     AdPlatform
+  externalId   String                                 // ad account id on the platform
+  accessToken  String
+  refreshToken String?
+  tokenExpiresAt DateTime?
+  createdAt    DateTime   @default(now())
+
+  campaigns AdCampaign[]
+
+  @@unique([userId, platform, externalId])
+}
+
+model AdCampaign {
+  id                String         @id @default(cuid())
+  storeId           String
+  store             Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  adAccountId       String
+  adAccount         AdAccount      @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  platform          AdPlatform
+  externalCampaignId String?       @unique
+  name              String
+  productIds        String[]                          // Product.id list being promoted
+  monthlyBudgetCents Int
+  dailyBudgetCents   Int
+  status            CampaignStatus @default(DRAFT)
+  targeting         Json?
+  creatives         Json?                             // { headlines: [], descriptions: [], cta: "" }
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  metrics AdMetricDaily[]
+}
+
+model AdMetricDaily {
+  id          String     @id @default(cuid())
+  campaignId  String
+  campaign    AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  date        DateTime
+  spendCents  Int        @default(0)
+  impressions Int        @default(0)
+  clicks      Int        @default(0)
+  conversions Int        @default(0)
+  revenueCents Int       @default(0)
+
+  @@unique([campaignId, date])
+  @@index([date])
+}
+
+// ───────────────────────── AI / Misc ─────────────────────────
+
+enum AIRunKind {
+  STORE_BUILDER
+  PRODUCT_LISTING
+  AD_COPY
+  DAILY_TIPS
+  PRODUCT_RESEARCH
+}
+
+model AIRun {
+  id        String    @id @default(cuid())
+  storeId   String?
+  store     Store?    @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  kind      AIRunKind
+  model     String
+  input     Json
+  output    Json?
+  costUsd   Float?
+  tokensIn  Int?
+  tokensOut Int?
+  error     String?
+  createdAt DateTime  @default(now())
+
+  @@index([kind, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level     String   @default("info") // info, success, warn, error
+  title     String
+  body      String?
+  meta      Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
+}
