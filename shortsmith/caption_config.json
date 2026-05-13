@@ -1,0 +1,15 @@
+{
+  "font_family": "Arial Black",
+  "font_size": 90,
+  "primary_color": "#FFFFFF",
+  "highlight_color": "#FFFF00",
+  "outline_color": "#000000",
+  "outline_width": 3,
+  "shadow_alpha": 0.5,
+  "shadow_offset": 1.5,
+  "position_y_ratio": 0.65,
+  "max_words_per_line": 2,
+  "safe_margin_bottom_px": 450,
+  "safe_margin_left_px": 60,
+  "safe_margin_right_px": 120
+}

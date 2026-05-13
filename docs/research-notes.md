@@ -71,18 +71,22 @@ def progress_hook(d):
 ### Model & Structured Output
 - Model ID: **`claude-opus-4-7`** (confirmed; no date suffix in Claude 4.x naming)
 - Context: 200K input / 128K output tokens
-- Use `response_format` with Pydantic for clean JSON extraction:
+- Use `client.messages.parse()` with `output_format=` and a Pydantic model — verified against SDK examples at `anthropics/anthropic-sdk-python/examples/structured_outputs.py`:
 ```python
-from anthropic import Anthropic
-client = Anthropic()
-response = client.messages.parse(
+import anthropic
+from pydantic import BaseModel
+
+client = anthropic.Anthropic()
+parsed = client.messages.parse(
     model="claude-opus-4-7",
     max_tokens=4096,
     messages=[{"role": "user", "content": prompt}],
-    response_format=ClipCandidates,  # Pydantic model
+    output_format=ClipCandidates,  # Pydantic BaseModel subclass
 )
+result = parsed.parsed_output  # typed as ClipCandidates
 ```
-- **Tokenizer note:** Opus 4.7 generates ~35% more tokens than 4.6 for the same text — budget transcript chunks at ~3000 words max per API call to stay within output limits.
+- No beta header required — `parse()` is a first-class SDK method.
+- Budget transcript chunks at ~3000 words max per API call to stay within output token limits.
 - Rate limits (Tier 1): ~348K input tokens/min, ~80K output tokens/min. Adequate for single-user use.
 
 ---
@@ -149,13 +153,13 @@ For subprocess control where needed, use direct `subprocess.Popen` with FFmpeg a
    - A 20s Short at 90% completion outperforms a 60s Short at 70% completion
    - Penalize segments > 45s unless every second is load-bearing
 
-3. **Emotional Peak** — Rank: Awe/surprise > Humor (30% more shares vs serious content) > Fear/urgency > Relatability. Anger/outrage has high engagement but platform moderation risk.
+3. **Emotional Peak** — Rank: Awe/surprise > Humor > Fear/urgency > Relatability. Anger/outrage has high engagement but platform moderation risk.
 
 4. **Self-Containment** — Most common failure mode when auto-clipping. Fail if: pronouns without antecedents, reference to prior context, punchline requires setup not in segment.
 
 5. **Information Density** — Penalize filler phrases, ramp-up time, restatements.
 
-6. **Novelty** — Top predictor in arXiv 2512.21402 (VLM virality evaluation, Dec 2024). Counterintuitive claims and violated expectations score high.
+6. **Novelty** — Counterintuitive claims and violated expectations score high. (Source: "Understanding Virality" paper researched by subagent — verify arXiv ID independently before citing.)
 
 7. **Re-watch Trigger** — Hidden detail, fast insight, visual gag. Drives loop behavior which YouTube weighs positively.
 
