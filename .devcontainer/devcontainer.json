@@ -1,0 +1,21 @@
+{
+  "name": "ShortSmith",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "cd shortsmith && bash setup.sh",
+  "forwardPorts": [8000, 5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "ShortSmith UI",
+      "onAutoForward": "openBrowser"
+    },
+    "8000": {
+      "label": "ShortSmith API"
+    }
+  },
+  "secrets": {
+    "ANTHROPIC_API_KEY": {
+      "description": "Your Anthropic API key from console.anthropic.com",
+      "documentationUrl": "https://console.anthropic.com"
+    }
+  }
+}
